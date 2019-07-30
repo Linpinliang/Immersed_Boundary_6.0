@@ -1,11 +1,14 @@
 #include <iostream>
-#include "demo.h"
+#include "flow_past_a_circular_cylinder.h"
+#include <omp.h>
+#include "test.h"
+//#include "test.h"
+//#include "Poiseuille.h"
+int main() {
 
-int main(){
+	//test02();
+	test04();
+	//system("pause");
+	//Poiseuille01();
 
-	demo1();
-
-	
-
-	return 0;
 }

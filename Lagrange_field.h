@@ -23,11 +23,6 @@ public:
 	double _delta_Sb;
 	vector<Lagrange_Point*> lagrange_node;
 
-	//multi method parameter
-
-	int _NF;
-
-
 public:
 	//
 	Lagrange_field();
@@ -35,25 +30,12 @@ public:
 	//Ô²Öù
 	Lagrange_field(double center_x,double center_y, double r,int number_of_node);
 
-
-	//multi method constructor
-	Lagrange_field(double center_x, double center_y, double r, int number_of_node,int NF);
-
-
 	void Set_center_x(double x);
 	void Set_center_y(double y);
 	void Set_Number_of_lagrange_node(int N);
 	void Set_delta_Sb();
 	void Set_r(double r);
 	void Set_lagrange_node();
-	
-	//multi 
-	void Set_NF_lagrange_node(int nf_number);
-
-	//clear NF parameter
-	void Clear_NF_Fb();
-	void Clear_NF_ub();
-
 
 	double Get_center_x(double x);
 	double Get_center_y(double y);
@@ -63,7 +45,10 @@ public:
 
 	//Output Data
 	void Output_Solid(double value, int step);
-	void Output_Solid_NF(int NF_m, int NF_step ,int cylinder_step);
+
+
+	//output xyuvfxfy
+	void output_all(int step);
 
 	~Lagrange_field();
 

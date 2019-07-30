@@ -1,10 +1,5 @@
 #ifndef LAGRANGE_POINT_H
 #define LAGRANGE_POINT_H
-#include <vector>
-#include <iostream>
-using namespace std;
-
-
 class Lagrange_Point
 {
 private:
@@ -20,42 +15,24 @@ private:
 	double _Fx;
 	double _Fy;
 
+	double _delta_sb;
 
-
-	//NF method parameter
-	int _NF;
-
-	vector<double > _NF_Fx;
-	vector<double > _Nf_Fy;
-	vector<double > _NF_ub;
-	vector<double > _NF_vb;
-
+	
 
 public:
 	//Lagrange_Point();
 	Lagrange_Point(double x, double y);
 
-	//multi_mothod_constructor
-	Lagrange_Point(double x, double y ,int NF);
 
 
 
-
-
-
-	//Set method
 	void Set_Position(double x, double y);
 	void Set_ub_vb_noF(double ub_noF, double vb_noF);
 	void Set_Ub_Vb(double Ub, double Vb);
 	void Set_F(double Fx, double Fy);
+	void Set_deleta_sb(double DELTA_SB);
 
 
-	//multi_method Parameter
-	void Set_NF(int nf);
-	void Set_NF_ub_vb(double ub ,double vb,int m);
-	void Set_NF_F(double Fx ,double Fy ,int m);
-
-	//Get method
 	double Get_Position_x();
 	double Get_Position_y();
 
@@ -67,21 +44,8 @@ public:
 
 	double Get_Fx();
 	double Get_Fy();
-
-	//multi_method get
-	double Get_NF_ub(int m);
-	double Get_NF_vb(int m);
-
-	double Get_NF_Fx(int m);
-	double Get_NF_Fy(int m);
-
-	int Get_NF_size();
-
-
-
-
-
-
+	double Get_delta_sb();
+	
 
 	~Lagrange_Point();
 };

@@ -2,7 +2,9 @@
 #define FLOW_PAST_A_CIRCULAR_CYLINDER_H
 #include "Lagrange_field.h"
 #include "euler_field.h"
+#include "Interreaction.h"
 #include "Function.h"
+
 
 class flow_past_a_circular_cylinder
 {
@@ -18,6 +20,9 @@ private:
 	int _Number_of_node;
 
 
+
+
+
 	//Parameter
 	double _u;
 	double _Re;
@@ -25,7 +30,6 @@ private:
 	//double _tau;
 	int _number_of_threads;
 	int _max_step;
-	int _step;
 
 	//lagrange_area
 
@@ -34,15 +38,13 @@ private:
 
 	int _lagrange_area_y1;
 	int _lagrange_area_y2;
-	//lagrange_area
 
 
-	//mluti method NF
-	int _NF;
 
 	Lagrange_field* Solid;
 	euler_field* Fluid;
 
+	Interreaction* _interreaction;
 
 
 public:
@@ -51,15 +53,6 @@ public:
 	flow_past_a_circular_cylinder(int Grid_X, int Grid_Y,
 		double center_x, double center_y, double r, int number_of_node, 
 		double Re, double L, double u, int number_of_threads,int max_step);
-
-	
-
-	//multi method
-	flow_past_a_circular_cylinder(int Grid_X, int Grid_Y,
-		double center_x, double center_y, double r, int number_of_node,
-		double Re, double L, double u, int number_of_threads, int max_step
-	,int NF);
-
 
 	//euler node
 	void Set_X_Max(int x);
@@ -82,14 +75,11 @@ public:
 	//lagrange_area
 	void Set_lagrange_area();
 
-	//NF 
-	void Set_NF(int nf_number);
 
 	void Set_Solid();
 	void Set_Fuild();
 
-	void Set_Solid(int nf);
-	void Set_Fuild(int nf);
+	void Set_Interreaction();
 
 	double Get_X_Max();
 	double Get_Y_Max();
@@ -102,9 +92,6 @@ public:
 	double Get_L();
 	double Get_number_of_threads();
 	double Get_u();
-
-
-	int Get_NF();
 
 	Lagrange_field* Get_Solid();
 	euler_field* Get_Fuild();
@@ -127,26 +114,6 @@ public:
 
 
 
-	//mluti method
-	void mluti_method_step_a();
-	
-	void mluti_method_step_b();
-
-	void mluti_method_step_c(int _m);
-
-	void mluti_method_step_d(int _m);
-
-	void mluti_method_step_e(int _m);
-
-	void mluti_method_step_f(int _m);
-
-	void mluti_method_step_g();
-
-	void mluti_method_first_forcing_step();
-
-	void mluti_method_evolution();
-
-
 	//¡¶œÓlbm≤Ω÷Ë
 
 	void First_forcing_step();
@@ -161,7 +128,24 @@ public:
 
 	void evolution();
 
+	//set_interreaction_data
 
+	void Set_up_interreaction_data();
+
+	//multi-direct-forcing
+
+	
+	void multi_evolution();
+
+	void multi_direct_forcing_step();
+
+	void euler_node_to_interreaction();
+
+	void lagrange_node_to_interreation();
+
+	void interreaction_to_lagrange_node();
+
+	void interreaction_to_euler_node();
 
 
 	void Output_Parameter();
@@ -169,34 +153,9 @@ public:
 	void Output_Solid(double value,int step);
 	void Output_Fluid(double value, int step);
 
-	//void Output_Solid_NF(int NF_m, int step);
-	//void Output_Fluid_NF(int NF_m,int step );
-	
-
-	
-
-	void mluti_test_step_a();
-	
-	void mluti_test_step_b();
-
-	void mluti_test_step_c(int m);
-
-	void mluti_test_step_d(int m);
-
-	void mluti_test_step_e(int m);
-
-	void mluti_test_step_f(int m);
-
-	void mluti_test_step_g();
-
-	void clear_NF_Parameter();
 
 
 
-
-	void Output_mluti_test();
-
-	void Output_Fb();
 
 	~flow_past_a_circular_cylinder();
 };

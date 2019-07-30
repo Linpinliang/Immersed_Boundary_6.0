@@ -34,41 +34,6 @@ flow_past_a_circular_cylinder::flow_past_a_circular_cylinder(int Grid_X, int Gri
 
 }
 
-
-
-//mluti method
-flow_past_a_circular_cylinder::flow_past_a_circular_cylinder(int Grid_X, int Grid_Y,
-	double center_x, double center_y, double r, int number_of_node, 
-	double Re, double L, double u, int number_of_threads, 
-	int max_step, int NF)
-{
-
-	Set_X_Max(Grid_X);
-	Set_Y_Max(Grid_Y);
-
-	Set_number_of_node(number_of_node);
-	Set_center_x(center_x);
-	Set_center_y(center_y);
-	Set_r(r);
-
-	Set_Re(Re);
-	Set_u(u);
-	Set_L(L);
-	Set_number_of_threads(number_of_threads);
-	Set_max_step(max_step);
-
-
-	Set_lagrange_area();
-
-	Set_NF(NF);
-	//cout <<"nf = "<< _NF;
-	Set_Solid(_NF);
-	Set_Fuild(_NF);
-
-
-
-}
-
 void flow_past_a_circular_cylinder::Set_X_Max(int x)
 {
 	X_Max = x;
@@ -138,22 +103,16 @@ void flow_past_a_circular_cylinder::Set_lagrange_area()
 
 	_lagrange_area_y2 = _center_y + _r + 4;
 
-	//cout << "lagrange_area_x1=" << _lagrange_area_x1 << endl;
+	cout << "lagrange_area_x1=" << _lagrange_area_x1 << endl;
 
-	//cout << "lagrange_area_x2=" << _lagrange_area_x2 << endl;
+	cout << "lagrange_area_x2=" << _lagrange_area_x2 << endl;
 
-	//cout << "lagrange_area_y1=" << _lagrange_area_y1 << endl;
+	cout << "lagrange_area_y1=" << _lagrange_area_y1 << endl;
 
-	//cout << "lagrange_area_y2=" << _lagrange_area_y2 << endl;
-
-
-
-}
+	cout << "lagrange_area_y2=" << _lagrange_area_y2 << endl;
 
 
-void flow_past_a_circular_cylinder::Set_NF(int nf_number)
-{
-	_NF = nf_number;
+
 }
 
 void flow_past_a_circular_cylinder::Set_Solid()
@@ -166,14 +125,55 @@ void flow_past_a_circular_cylinder::Set_Fuild()
 	Fluid = new euler_field(X_Max,Y_Max,_Re,_L,_u,_max_step);
 }
 
-void flow_past_a_circular_cylinder::Set_Solid(int nf)
+void flow_past_a_circular_cylinder::Set_Interreaction()
 {
-	Solid = new Lagrange_field(_center_x, _center_y, _r, _Number_of_node,_NF);
-}
+	_interreaction = new Interreaction(X_Max, Y_Max, _Number_of_node);
 
-void flow_past_a_circular_cylinder::Set_Fuild(int nf)
-{
-	Fluid = new euler_field(X_Max, Y_Max, _Re, _L, _u, _max_step, _NF);
+
+#pragma omp parallel for
+	for (int i = 0; i < X_Max + 1; i++)
+	{
+		for (int j = 0; j < Y_Max + 1; j++)
+		{
+			_interreaction->_Is_Compute[i][j] = false;
+
+			double euler_x = i;
+			double euler_y = j;
+
+
+			for (int node = 0; node < _Number_of_node; node++)
+			{
+				double lagrange_x = Solid->lagrange_node[node]->Get_Position_x();
+				double lagrange_y = Solid->lagrange_node[node]->Get_Position_y();
+
+				double distance = Distance(euler_x, euler_y, lagrange_x, lagrange_y);
+				if (distance <= 3) {
+					_interreaction->_Is_Compute[i][j] = true;
+
+				}
+			}
+
+
+			//cout << i << "," << j << "," << _interreaction->_Is_Compute[i][j] <<endl;
+
+			/*
+
+			if (_interreaction->_Is_Compute[i][j]) {
+				//cout << i << "," << j << "," << _interreaction->_Is_Compute[i][j] << endl;
+				cout << i << "\t"<< j<<";"<<endl;
+			}
+
+			*/
+		
+		}
+	}
+
+
+
+
+
+
+
 }
 
 double flow_past_a_circular_cylinder::Get_X_Max()
@@ -221,11 +221,6 @@ double flow_past_a_circular_cylinder::Get_u()
 	return _u;
 }
 
-int flow_past_a_circular_cylinder::Get_NF()
-{
-	return _NF;
-}
-
 Lagrange_field * flow_past_a_circular_cylinder::Get_Solid()
 {
 	return Solid;
@@ -262,16 +257,9 @@ void flow_past_a_circular_cylinder::Unforce_velocity_interpolation()
 	{
 		double ub_noF = 0;
 		double vb_noF = 0;
-
-		int delta_function_area = 3;
-		int x_min = int(Solid->lagrange_node[node]->Get_Position_x()) - delta_function_area;
-		int x_max = int(Solid->lagrange_node[node]->Get_Position_x()) + delta_function_area;
-		int y_min = int(Solid->lagrange_node[node]->Get_Position_y()) - delta_function_area;
-		int y_max = int(Solid->lagrange_node[node]->Get_Position_y()) + delta_function_area;
-
-		for (signed int i = x_min; i < x_max; i++)
+		for (signed int i = _lagrange_area_x1; i < _lagrange_area_x2; i++)
 		{
-			for (signed int j = y_min; j < y_max; j++)
+			for (signed int j = _lagrange_area_y1; j < _lagrange_area_y2; j++)
 			{
 				double h = 1;
 				double D = D_function(Fluid->euler_node[i][j]->Get_Position_x(), Fluid->euler_node[i][j]->Get_Position_y(),
@@ -308,12 +296,10 @@ void flow_past_a_circular_cylinder::Boundary_force_evaluation_on_Xb()
 //step d
 void flow_past_a_circular_cylinder::Force_distribution_on_Xij()
 {
-
-	/*
-	#pragma omp parallel for
-	for (signed int i = 0; i < Fluid->euler_node.size(); i++)
+#pragma omp parallel for
+	for (signed int i = _lagrange_area_x1; i < _lagrange_area_x2; i++)
 	{
-		for (signed int j = 0; j < Fluid->euler_node[0].size(); j++)
+		for (signed int j = _lagrange_area_y1; j < _lagrange_area_y2; j++)
 		{
 
 			double fx = 0;
@@ -337,77 +323,6 @@ void flow_past_a_circular_cylinder::Force_distribution_on_Xij()
 
 		}
 	}
-	*/
-	
-	//加速版
-
-
-	//清空Fij
-
-	
-#pragma omp parallel for
-	for (signed int i = _lagrange_area_x1; i < _lagrange_area_x2; i++)
-	{
-		for (signed int j = _lagrange_area_y1; j < _lagrange_area_y2; j++)
-		{
-
-			double fx = 0;
-			double fy = 0;
-			
-			Fluid->euler_node[i][j]->Set_Body_force(fx, fy);
-
-		}
-	}
-	
-
-
-
-	//赋值累加力项
-	#pragma omp parallel for
-	for (signed int node = 0; node < Solid->lagrange_node.size(); node++)
-	{
-		
-
-		int delta_function_area = 3;
-		int x_min = int(Solid->lagrange_node[node]->Get_Position_x()) - delta_function_area;
-		int x_max = int(Solid->lagrange_node[node]->Get_Position_x()) + delta_function_area;
-		int y_min = int(Solid->lagrange_node[node]->Get_Position_y()) - delta_function_area;
-		int y_max = int(Solid->lagrange_node[node]->Get_Position_y()) + delta_function_area;
-
-		for (signed int i = x_min; i < x_max; i++)
-		{
-			for (signed int j = y_min; j < y_max; j++)
-			{
-				double fx = Fluid->euler_node[i][j]->Get_Body_force_fx();
-				double fy = Fluid->euler_node[i][j]->Get_Body_force_fy();
-
-
-				double x1 = Solid->lagrange_node[node]->Get_Position_x();
-				double y1 = Solid->lagrange_node[node]->Get_Position_y();
-
-				double x2 = Fluid->euler_node[i][j]->Get_Position_x();
-				double y2 = Fluid->euler_node[i][j]->Get_Position_y();
-
-				double delta_sb;
-				delta_sb = Solid->Get_delta_Sb();
-
-				fx += Solid->lagrange_node[node]->Get_Fx() * D_function(x1, y1, x2, y2) * delta_sb;
-				fy += Solid->lagrange_node[node]->Get_Fy() * D_function(x1, y1, x2, y2) * delta_sb;
-
-				Fluid->euler_node[i][j]->Set_Body_force(fx, fy);
-
-				
-			}
-		}
-		
-
-	}
-
-
-	
-
-
-
 }
 
 //step e
@@ -432,556 +347,6 @@ void flow_past_a_circular_cylinder::Update_of_velocity_on_xij()
 
 
 }
-
-void flow_past_a_circular_cylinder::mluti_method_step_a()
-{
-
-
-
-
-#pragma omp parallel for
-	for (int i = 0; i < Fluid->euler_node.size(); i++)
-	{
-		for (int j = 0; j < Fluid->euler_node[0].size(); j++)
-		{
-			double u = Fluid->euler_node[i][j]->Get_Velocity_x();
-			double v = Fluid->euler_node[i][j]->Get_Velocity_y();
-
-			Fluid->euler_node[i][j]->Set_NF_u(0, u, v);
-
-			//Fluid->euler_node[i][j]->Set_Velocity(u, v);
-		}
-	}
-
-
-
-
-
-}
-//
-//void flow_past_a_circular_cylinder::mluti_method_step_b()
-//{
-//#pragma omp parallel for
-//	for (signed int node = 0; node < Solid->lagrange_node.size(); node++)
-//	{
-//		double ub = 0;
-//		double vb = 0;
-//
-//		int delta_function_area = 3;
-//		int x_min = int(Solid->lagrange_node[node]->Get_Position_x()) - delta_function_area;
-//		int x_max = int(Solid->lagrange_node[node]->Get_Position_x()) + delta_function_area;
-//		int y_min = int(Solid->lagrange_node[node]->Get_Position_y()) - delta_function_area;
-//		int y_max = int(Solid->lagrange_node[node]->Get_Position_y()) + delta_function_area;
-//
-//		for (signed int i = x_min; i < x_max; i++)
-//		{
-//			for (signed int j = y_min; j < y_max; j++)
-//			{
-//				double h = 1;
-//				double D = D_function(Fluid->euler_node[i][j]->Get_Position_x(), Fluid->euler_node[i][j]->Get_Position_y(),
-//					Solid->lagrange_node[node]->Get_Position_x(), Solid->lagrange_node[node]->Get_Position_y());
-//
-//				ub += Fluid->euler_node[i][j]->Get_NF_u(0) * D * h * h;
-//				vb += Fluid->euler_node[i][j]->Get_NF_v(0) * D * h * h;
-//
-//			}
-//		}
-//		Solid->lagrange_node[node]->Set_NF_ub_vb(ub, vb, 0);
-//
-//	}
-//
-//
-//}
-
-
-
-
-void flow_past_a_circular_cylinder::mluti_method_step_b(){
-	
-#pragma omp parallel for
-	for (signed int node = 0; node < Solid->lagrange_node.size(); node++)
-	{
-		double ub_noF = 0;
-		double vb_noF = 0;
-
-		int delta_function_area = 3;
-		int x_min = int(Solid->lagrange_node[node]->Get_Position_x()) - delta_function_area;
-		int x_max = int(Solid->lagrange_node[node]->Get_Position_x()) + delta_function_area;
-		int y_min = int(Solid->lagrange_node[node]->Get_Position_y()) - delta_function_area;
-		int y_max = int(Solid->lagrange_node[node]->Get_Position_y()) + delta_function_area;
-
-		for (signed int i = x_min; i < x_max; i++)
-		{
-			for (signed int j = y_min; j < y_max; j++)
-			{
-				double h = 1;
-				double D = D_function(Fluid->euler_node[i][j]->Get_Position_x(), Fluid->euler_node[i][j]->Get_Position_y(),
-					Solid->lagrange_node[node]->Get_Position_x(), Solid->lagrange_node[node]->Get_Position_y());
-
-				ub_noF += Fluid->euler_node[i][j]->Get_u_noF() * D * h * h;
-				vb_noF += Fluid->euler_node[i][j]->Get_v_noF() * D * h * h;
-
-			}
-		}
-
-		
-		Solid->lagrange_node[node]->Set_ub_vb_noF(ub_noF, vb_noF);
-
-
-
-		Solid->lagrange_node[node]->Set_NF_ub_vb(ub_noF, vb_noF,0);
-
-	}
-
-
-
-}
-
-
-void flow_past_a_circular_cylinder::mluti_method_step_c(int _m)
-{
-#pragma omp parallel for
-	for (signed int i = 0; i < Solid->lagrange_node.size(); i++)
-	{
-		double Fx_m = 0;
-		double Fy_m = 0;
-		
-
-		double rho = 0.7 ;
-		double delta_t = 1;
-		//Fx = 2 * rho * (Solid->lagrange_node[i]->Get_Ub() - Solid->lagrange_node[i]->get_ub_nof()) / delta_t;
-		//Fy = 2 * rho * (Solid->lagrange_node[i]->Get_Vb() - Solid->lagrange_node[i]->get_vb_nof()) / delta_t;
-		//Solid->lagrange_node[i]->Set_F(Fx, Fy);
-		
-		double Ub = Solid->lagrange_node[i]->Get_Ub();
-		double Vb = Solid->lagrange_node[i]->Get_Vb();
-
-		double ub = Solid->lagrange_node[i]->Get_NF_ub(_m - 1);
-		double vb = Solid->lagrange_node[i]->Get_NF_vb(_m - 1);
-
-		Fx_m = 2 * rho * (Ub - ub) / delta_t;
-		Fy_m = 2 * rho * (Vb - vb) / delta_t;
-		
-		Solid->lagrange_node[i]->Set_NF_F(Fx_m, Fy_m, _m);
-	
-	}
-
-
-
-
-}
-
-void flow_past_a_circular_cylinder::mluti_method_step_d(int _m)
-{
-	
-	//clear nf Fij
-//#pragma omp parallel for
-	/*for (signed int i = _lagrange_area_x1; i < _lagrange_area_x2; i++)
-	{
-		for (signed int j = _lagrange_area_y1; j < _lagrange_area_y2; j++)
-		{
-
-			double fx = 0;
-			double fy = 0;
-
-			Fluid->euler_node[i][j]->Set_NF_F(_m, fx, fy);
-
-		}
-	}
-	*/
-
-
-	/*
-#pragma omp parallel for
-	for (signed int node = 0; node < Solid->lagrange_node.size(); node++)
-	{
-
-
-		int delta_function_area = 3;
-		int x_min = int(Solid->lagrange_node[node]->Get_Position_x()) - delta_function_area;
-		int x_max = int(Solid->lagrange_node[node]->Get_Position_x()) + delta_function_area;
-		int y_min = int(Solid->lagrange_node[node]->Get_Position_y()) - delta_function_area;
-		int y_max = int(Solid->lagrange_node[node]->Get_Position_y()) + delta_function_area;
-
-		for (signed int i = x_min; i < x_max; i++)
-		{
-			for (signed int j = y_min; j < y_max; j++)
-			{
-				//double fx = Fluid->euler_node[i][j]->Get_Body_force_fx();
-				//double fy = Fluid->euler_node[i][j]->Get_Body_force_fy();
-
-				double fx = Fluid->euler_node[i][j]->Get_NF_Fx(_m);
-				double fy = Fluid->euler_node[i][j]->Get_NF_Fy(_m);
-
-
-				double x1 = Solid->lagrange_node[node]->Get_Position_x();
-				double y1 = Solid->lagrange_node[node]->Get_Position_y();
-
-				double x2 = Fluid->euler_node[i][j]->Get_Position_x();
-				double y2 = Fluid->euler_node[i][j]->Get_Position_y();
-
-				double delta_sb;
-				delta_sb = Solid->Get_delta_Sb();
-
-
-
-
-				fx += Solid->lagrange_node[node]->Get_NF_Fx(_m) * D_function(x1, y1, x2, y2) * delta_sb;
-				fy += Solid->lagrange_node[node]->Get_NF_Fy(_m) * D_function(x1, y1, x2, y2) * delta_sb;
-
-				Fluid->euler_node[i][j]->Set_NF_F(_m, fx, fy);
-
-
-			}
-
-		}
-
-
-	}
-
-	*/
-
-	#pragma omp parallel for
-	for (int i = 0; i < Fluid->euler_node.size(); i++)
-	{
-		for (int j = 0; j < Fluid->euler_node[0].size(); j++)
-		{
-			double Fx = 0;
-			double Fy = 0;
-
-			for (int node = 0; node < Solid->lagrange_node.size(); node++)
-			{
-				double x1 = Solid->lagrange_node[node]->Get_Position_x();
-				double y1 = Solid->lagrange_node[node]->Get_Position_y();
-
-				double x2 = Fluid->euler_node[i][j]->Get_Position_x();
-				double y2 = Fluid->euler_node[i][j]->Get_Position_y();
-
-				if (D_function(x1, y1, x2, y2) != 0)
-				{
-
-\
-					
-					double delta_sb;
-					delta_sb = Solid->Get_delta_Sb();
-
-
-					/*cout << "x = " << Fluid->euler_node[i][j]->Get_Position_x() << "\t";
-					cout << "y = " << Fluid->euler_node[i][j]->Get_Position_y() << "\t";
-					cout << "fx= " << Solid->lagrange_node[node]->Get_NF_Fx(_m)* D_function(x1, y1, x2, y2) * delta_sb << "\t";
-					cout << "fy= " << Solid->lagrange_node[node]->Get_NF_Fy(_m)* D_function(x1, y1, x2, y2) * delta_sb << "\t";*/
-
-
-					/*cout << endl;*/
-					
-
-					Fx += Solid->lagrange_node[node]->Get_NF_Fx(_m)* D_function(x1, y1, x2, y2) * delta_sb;
-					Fy += Solid->lagrange_node[node]->Get_NF_Fy(_m)* D_function(x1, y1, x2, y2) * delta_sb;
-					
-				}
-	
-			}
-
-			////输出部分
-			//if (_step == 300)
-			//{
-			//	
-			//	if (Fx != 0 || Fy != 0)
-			//	{
-			//		cout << "before set" << endl;
-			//		cout << "stepe_1" << endl;
-			//		cout << " m =" << _m << endl;
-			//		cout << "x = " << Fluid->euler_node[i][j]->Get_Position_x() << "\t";
-			//		cout << "y = " << Fluid->euler_node[i][j]->Get_Position_y() << "\t";
-
-			//		cout <<Fx<< "\t";
-			//		cout <<Fy<< "\t";
-			//		cout << endl;
-			//	}
-			//}
-
-			Fluid->euler_node[i][j]->Set_NF_F(_m, Fx, Fy);
-
-			//if (Fx !=0 || Fy !=0)
-			//{
-			//	cout << "x = " << i << "\t";
-			//	cout << "y = " << j << "\t";
-			//	cout << "Fx = " << Fx << "\t";
-			//	cout << "Fy = " << Fy << "\t";
-
-
-			//	cout << Fluid->euler_node[i][j]->Get_NF_Fx(_m) << "\t";
-
-			//	cout << Fluid->euler_node[i][j]->Get_NF_Fy(_m) << "\t";
-
-
-			//	cout << endl;
-
-			//}
-
-			
-
-			
-		/*	if (_step == 300)
-			{
-				
-				if (Fx != 0 || Fy != 0)
-				{
-					cout << "after set" << endl;
-					cout << "stepe_2" << endl;
-					cout << " m =" << _m << endl;
-
-					cout << "x = " << Fluid->euler_node[i][j]->Get_Position_x() << "\t";
-					cout << "y = " << Fluid->euler_node[i][j]->Get_Position_y() << "\t";
-
-					cout << Fluid->euler_node[i][j]->Get_NF_Fx(_m) << "\t";
-					cout << Fluid->euler_node[i][j]->Get_NF_Fy(_m) << "\t";
-					cout << endl;
-
-				}
-			}*/
-
-
-
-
-		}
-	}
-
-
-
-
-
-
-
-}
-
-void flow_past_a_circular_cylinder::mluti_method_step_e(int _m)
-{
-	double delta_t = 1;
-	double rho = 0.5;
-	#pragma omp parallel for
-	for (signed int i = 0; i < Fluid->euler_node.size(); i++)
-	{
-		for (signed int j = 0; j < Fluid->euler_node[0].size(); j++)
-		{
-			//double u = Fluid->euler_node[i][j]->Get_u_noF() + delta_t / 2 / rho * Fluid->euler_node[i][j]->Get_Body_force_fx();
-			//double v = Fluid->euler_node[i][j]->Get_v_noF() + delta_t / 2 / rho * Fluid->euler_node[i][j]->Get_Body_force_fy();
-			
-			double u = Fluid->euler_node[i][j]->Get_NF_u(_m - 1) + delta_t / 2 / rho * Fluid->euler_node[i][j]->Get_NF_Fx(_m);
-			double v = Fluid->euler_node[i][j]->Get_NF_v(_m - 1) + delta_t / 2 / rho * Fluid->euler_node[i][j]->Get_NF_Fy(_m);
-
-
-
-			//Fluid->euler_node[i][j]->Set_Velocity(u, v);
-
-			Fluid->euler_node[i][j]->Set_NF_u(_m, u, v);
-
-		}
-	}
-
-
-
-
-}
-
-void flow_past_a_circular_cylinder::mluti_method_step_f(int _m)
-{
-#pragma omp parallel for
-	for (signed int node = 0; node < Solid->lagrange_node.size(); node++)
-	{
-		double ub = 0;
-		double vb = 0;
-
-		int delta_function_area = 3;
-		int x_min = int(Solid->lagrange_node[node]->Get_Position_x()) - delta_function_area;
-		int x_max = int(Solid->lagrange_node[node]->Get_Position_x()) + delta_function_area;
-		int y_min = int(Solid->lagrange_node[node]->Get_Position_y()) - delta_function_area;
-		int y_max = int(Solid->lagrange_node[node]->Get_Position_y()) + delta_function_area;
-
-		for (signed int i = x_min; i < x_max; i++)
-		{
-			for (signed int j = y_min; j < y_max; j++)
-			{
-				double h = 1;
-				double D = D_function(Fluid->euler_node[i][j]->Get_Position_x(), Fluid->euler_node[i][j]->Get_Position_y(),
-					Solid->lagrange_node[node]->Get_Position_x(), Solid->lagrange_node[node]->Get_Position_y());
-
-				ub += Fluid->euler_node[i][j]->Get_NF_u(_m) * D * h * h;
-				vb += Fluid->euler_node[i][j]->Get_NF_v(_m) * D * h * h;
-
-			}
-		}
-		Solid->lagrange_node[node]->Set_NF_ub_vb(ub, vb, _m);
-
-	}
-
-
-}
-
-void flow_past_a_circular_cylinder::mluti_method_step_g()
-{
-	//Fb
-	for (int i = 0; i < Solid->lagrange_node.size(); i++)
-	{
-		double Fx = 0;
-		double Fy = 0;
-		for (int m = 0; m < _NF; m++)
-		{
-
-			Fx += Solid->lagrange_node[i]->Get_NF_Fx(m);
-			Fy += Solid->lagrange_node[i]->Get_NF_Fy(m);
-
-		}
-
-
-		Solid->lagrange_node[i]->Set_F(Fx, Fy);
-
-	}
-
-
-
-
-	//ub
-
-	/*for (int i = 0; i < Solid->lagrange_node.size(); i++)
-	{
-		double ub = Solid->lagrange_node[i]->Get_NF_ub(_NF-1);
-		double vb = Solid->lagrange_node[i]->Get_NF_vb(_NF-1);
-
-		Solid->lagrange_node[i]->Set_ub_vb_noF(ub,vb);
-	}
-
-
-*/
-
-
-	//F_ij
-
-	for (int i = 0; i < Fluid->euler_node.size(); i++)
-	{
-		for (int j = 0; j < Fluid->euler_node[0].size(); j++)
-		{
-			double Fx = 0;
-			double Fy = 0;
-
-			for (int m = 0; m < _NF; m++)
-			{
-				Fx += Fluid->euler_node[i][j]->Get_NF_Fx(m);
-				Fy += Fluid->euler_node[i][j]->Get_NF_Fy(m);
-			}
-
-			Fluid->euler_node[i][j]->Set_Body_force(Fx, Fy);
-
-
-		}
-	}
-
-
-
-
-
-
-	//uij
-
-	for (int i = 0; i < Fluid->euler_node.size(); i++)
-	{
-		for (int j = 0; j < Fluid->euler_node[0].size(); j++)
-		{
-			double u = Fluid->euler_node[i][j]->Get_NF_u(_NF - 1);
-			double v = Fluid->euler_node[i][j]->Get_NF_v(_NF - 1);
-
-			Fluid->euler_node[i][j]->Set_Velocity(u, v);
-
-		}
-	}
-
-
-
-
-
-
-
-
-}
-
-
-
-
-
-
-void flow_past_a_circular_cylinder::mluti_method_first_forcing_step()
-{
-
-	//clear_NF_Parameter();
-	mluti_method_step_a();	
-	mluti_method_step_b();
-
-
-	for (int m = 1; m < _NF; m++)
-	{
-		mluti_method_step_c(m);
-
-		mluti_method_step_d(m);
-
-		mluti_method_step_e(m);
-
-		mluti_method_step_f(m);
-
-	}
-	mluti_method_step_g();
-
-
-}
-
-void flow_past_a_circular_cylinder::mluti_method_evolution()
-{
-	
-	Fluid->Boundary_Condition();
-	Fluid->Output_grid();
-	Output_Parameter();
-	for (int i = 0; i < _max_step; i++)
-	{
-
-		mluti_method_first_forcing_step();
-		Collision_step();
-		Secord_forcing_step();
-		Stream_step();
-		Macroscopic();
-
-		/*	Solid->Output_Solid_NF(0, 0, i);
-			Fluid->Output_Fluid_NF(0, 0, i);
-			Output_Fluid(_Re, i);
-			Output_Solid(_Re, i);*/
-
-		if (i % 1000 == 0) {
-			Output_Fluid(_Re, i);
-			Output_Solid(_Re, i);
-
-			Fluid->Output_all(_Re, i);
-			Solid->Output_Solid_NF(0, 0, i);
-			Fluid->Output_Fluid_NF(0, 0, i);
-
-			//Output_mluti_test();
-	
-
-
-			cout << i << endl;
-		}
-		_step++;
-
-	}
-
-	
-
-
-
-}
-
-
-
-
-
-
 
 void flow_past_a_circular_cylinder::First_forcing_step()
 {
@@ -1056,7 +421,7 @@ void flow_past_a_circular_cylinder::evolution()
 	Fluid->Boundary_Condition();
 	Fluid->Output_grid();
 	Output_Parameter();
-	for (int i = 0; i < _max_step; i++)
+	for (int i = 0; i < 10001; i++)
 	{
 		First_forcing_step();
 		Collision_step();
@@ -1064,16 +429,285 @@ void flow_past_a_circular_cylinder::evolution()
 		Stream_step();
 		Macroscopic();
 
-		if (i % 1000 == 0) {
+		if (i % 2500 == 0) {
 			Output_Fluid(_Re, i);
-			Fluid->Output_all(_Re, i);
-
 			Output_Solid(_Re, i);
-			cout << i << endl;
+			cout << "evolution:"<<i << endl;
 		}
 
 	}
 }
+
+void flow_past_a_circular_cylinder::Set_up_interreaction_data()
+{
+	Set_Interreaction();
+
+	//euler node sent massage
+	_interreaction->Set_euler_node_number();
+
+	_interreaction->init_euler_data();
+
+	euler_node_to_interreaction();
+
+
+	//lagrange node sent massage
+
+	_interreaction->Set_lagrange_node_number();
+
+	_interreaction->init_lagrange_data();
+
+	lagrange_node_to_interreation();
+
+
+	_interreaction->Set_valid_cal();
+
+	_interreaction->Evolution_Step();
+
+	interreaction_to_euler_node();
+	interreaction_to_lagrange_node();
+
+
+}
+
+void flow_past_a_circular_cylinder::multi_evolution()
+{
+
+	Fluid->Boundary_Condition();
+	Fluid->Output_grid();
+	Output_Parameter();
+	//Set_up_interreaction_data();
+	
+	for (int i = 0; i < _max_step; i++)
+	{
+		multi_direct_forcing_step();
+
+		Collision_step();
+		Secord_forcing_step();
+		Stream_step();
+		Macroscopic();
+
+		if (i % 500 == 0) {
+			cout << i << endl;
+			Output_Fluid(_Re, i+1);
+			Output_Solid(_Re, i+1);
+			//_interreaction->output_euler_node(_Re, i+1);
+		}
+
+
+		//cout << i << endl;
+		//Output_Fluid(_Re, _max_step + i);
+		//Output_Solid(_Re, _max_step + i);
+
+		
+		
+		
+
+		//delete _interreaction;
+
+	}
+	
+
+	//_interreaction->Output_euler_data();
+	//_interreaction->Output_laghrange_data();
+
+	//multi_direct_forcing_step();
+
+
+	//Output_Fluid(_Re, 999);
+	//Output_Solid(_Re, 999);
+
+
+}
+
+void flow_past_a_circular_cylinder::multi_direct_forcing_step()
+{
+
+	Set_Interreaction();
+
+	//euler node sent massage
+	_interreaction->Set_euler_node_number();
+
+	_interreaction->init_euler_data();
+
+	euler_node_to_interreaction();
+	
+
+	//lagrange node sent massage
+	
+	_interreaction->Set_lagrange_node_number();
+
+	_interreaction->init_lagrange_data();
+	
+	lagrange_node_to_interreation();
+
+	
+
+
+	_interreaction->Set_valid_cal();
+
+	_interreaction->Evolution_Step();
+	
+	interreaction_to_euler_node();
+	interreaction_to_lagrange_node();
+	
+	//cout <<"---------------------------"<<endl;
+	//interreaction_to_lagrange_node();
+	//interreaction_to_euler_node();
+
+
+	//output
+
+	//_interreaction->Output_euler_data();
+	//_interreaction->Output_laghrange_data();
+	delete _interreaction;
+	
+
+}
+
+void flow_past_a_circular_cylinder::euler_node_to_interreaction()
+{
+#pragma omp parallel for
+	for (int i = 0; i < _interreaction->_Euler_data.size(); i++)
+	{
+		int x = _interreaction->_Euler_data[i]->Get_number_x();
+		int y = _interreaction->_Euler_data[i]->Get_number_y();
+
+
+		//euler_data
+		double u = Fluid->euler_node[x][y]->Get_Velocity_x();
+		double v = Fluid->euler_node[x][y]->Get_Velocity_y();
+
+		double x_position = Fluid->euler_node[x][y]->Get_Position_x();
+		double y_position = Fluid->euler_node[x][y]->Get_Position_y();
+
+
+		//interreaction_data
+
+		_interreaction->_Euler_data[i]->Set_u_ij_m(u, v, 0);
+		_interreaction->_Euler_data[i]->Set_Position(x_position, y_position);
+
+		//_interreaction->Evolution_Step();
+
+
+	}
+
+
+}
+
+void flow_past_a_circular_cylinder::lagrange_node_to_interreation()
+{
+#pragma omp parallel for
+	for (int i = 0; i < Solid->lagrange_node.size(); i++)
+	{
+		double x = Solid->lagrange_node[i]->Get_Position_x();
+		double y = Solid->lagrange_node[i]->Get_Position_y();
+
+		double U_b_x = Solid->lagrange_node[i]->Get_Ub();
+		double U_b_y = Solid->lagrange_node[i]->Get_Vb();
+
+
+		double delta_sb = Solid->lagrange_node[i]->Get_delta_sb();
+
+
+
+
+		//cout << delta_sb;
+
+
+
+
+		_interreaction->_lagrange_data[i]->Set_grid_xy(x,y);
+
+		_interreaction->_lagrange_data[i]->Set_delta_sb(delta_sb);
+
+		_interreaction->_lagrange_data[i]->Set_U_b(U_b_x, U_b_y);
+		//_interreaction->_lagrange_data[i]->Set_U_b(1,2 );
+
+
+	}
+
+
+
+}
+
+void flow_past_a_circular_cylinder::interreaction_to_lagrange_node()
+{
+
+#pragma omp parallel for
+	for (int i = 0; i < _interreaction->_lagrange_data.size(); i++)
+	{
+		double node_number = _interreaction->_lagrange_data[i]->Get_node_number();
+
+		//cout << node_number << endl;
+
+		double fbx = _interreaction->_lagrange_data[i]->Get_result_F_b_x();
+		double fby = _interreaction->_lagrange_data[i]->Get_result_F_b_y();
+
+
+		//cout << fx << "\t" <<fy << endl;
+
+		Solid->lagrange_node[i]->Set_F(fbx, fby);
+
+
+
+	}
+
+
+
+}
+
+void flow_past_a_circular_cylinder::interreaction_to_euler_node()
+{
+#pragma omp parallel for
+	for (int i = 0; i < _interreaction->_Euler_data.size(); i++)
+	{
+		double x = _interreaction->_Euler_data[i]->Get_number_x();
+		double y = _interreaction->_Euler_data[i]->Get_number_y();
+
+		double ux = _interreaction->_Euler_data[i]->Get_result_u_ij_x();
+		double uy = _interreaction->_Euler_data[i]->Get_result_u_ij_y();
+
+		double fx = _interreaction->_Euler_data[i]->Get_result_F_ij_x();
+		double fy = _interreaction->_Euler_data[i]->Get_result_F_ij_y();
+
+
+		
+		//cout << x << "\t" << y << endl;
+		//cout << ux << "\t" << uy << endl;
+		//cout << fx << "\t" << fy << endl;
+
+
+
+
+
+		Fluid->euler_node[x][y]->Set_Body_force(fx, fy);
+		Fluid->euler_node[x][y]->Set_Velocity(ux, uy);
+
+/*
+		cout << x << "\t" << y << endl;
+
+		cout << Fluid->euler_node[x][y]->Get_Velocity_x() << "\t" << Fluid->euler_node[x][y]->Get_Velocity_y();
+		cout << endl;
+
+		cout << Fluid->euler_node[x][y]->Get_Body_force_fx() << "\t" << Fluid->euler_node[x][y]->Get_Body_force_fy();
+
+
+		cout << endl;
+*/
+
+
+
+	}
+
+
+
+
+
+
+
+}
+
+
 
 
 void flow_past_a_circular_cylinder::Output_Parameter()
@@ -1093,7 +727,6 @@ void flow_past_a_circular_cylinder::Output_Parameter()
 	cout << "L = " << _L << endl;
 	cout <<"number_of_threads = " <<omp_get_thread_num()<<endl;
 	cout << "max_step = " << _max_step<<endl;
-	//cout << "max_step = " << Solid->
 
 }
 
@@ -1104,168 +737,15 @@ void flow_past_a_circular_cylinder::Output_Data()
 void flow_past_a_circular_cylinder::Output_Solid(double value, int step)
 {
 	Solid->Output_Solid(value, step);
+	
 }
 
 void flow_past_a_circular_cylinder::Output_Fluid(double value, int step)
 {
-	Fluid->Output_field(value, step);
+	Fluid->Output_field(value, step); 
+	Fluid->output_all(value, step);
 
 }
-
-
-
-void flow_past_a_circular_cylinder::mluti_test_step_a()
-{
-	//int m = 0;
-
-	
-	mluti_method_step_a();
-	//Fluid->Output_Fluid_NF(0, 0, 20000);
-
-}
-
-void flow_past_a_circular_cylinder::mluti_test_step_b()
-{
-	mluti_method_step_b();
-	//Solid->Output_Solid_NF(0, 0, 20000);
-
-}
-
-void flow_past_a_circular_cylinder::mluti_test_step_c(int m)
-{
-
-	mluti_method_step_c(m);
-	
-	//Fluid->Output_Fluid_NF(0, 0, 20000);
-	//Solid->Output_Solid_NF(0, 0, 20000);
-
-}
-
-void flow_past_a_circular_cylinder::mluti_test_step_d(int m)
-{
-	mluti_method_step_d(m);
-
-	//Fluid->Output_Fluid_NF(0, 0, 20000);
-	//Solid->Output_Solid_NF(0, 0, 20000);
-
-
-	//cout << "..........................................." << endl;
-	//for (int i = 0; i < Fluid->euler_node.size(); i++)
-	//{
-	//	for (int j = 0; j < Fluid->euler_node.size(); j++)
-	//	{
-	//		
-	//		double Fx = Fluid->euler_node[i][j]->Get_NF_Fx(m);
-	//		double Fy = Fluid->euler_node[i][j]->Get_NF_Fy(m);
-
-	//		if (Fx != 0 || Fy != 0)
-	//		{
-	//			cout << "x = " << i << "\t";
-	//			cout << "y = " << j << "\t";
-	//			cout << "Fx = " << Fx << "\t";
-	//			cout << "Fy = " << Fy << "\t";
-
-
-	//			cout << Fluid->euler_node[i][j]->Get_NF_Fx(m) << "\t";
-
-	//			cout << Fluid->euler_node[i][j]->Get_NF_Fy(m) << "\t";
-
-
-	//			cout << endl;
-
-	//		}
-
-
-	//	}
-	//}
-
-
-
-}
-
-void flow_past_a_circular_cylinder::mluti_test_step_e(int m)
-{
-	
-	mluti_method_step_e(m);
-	//Fluid->Output_Fluid_NF(0, 0, 20000);
-	//Solid->Output_Solid_NF(0, 0, 20000);
-
-}
-
-void flow_past_a_circular_cylinder::mluti_test_step_f(int m)
-{
-	mluti_method_step_f(m);
-	//Fluid->Output_Fluid_NF(0, 0, 20000);
-	//Solid->Output_Solid_NF(0, 0, 20000);
-
-
-}
-
-void flow_past_a_circular_cylinder::mluti_test_step_g()
-{
-
-
-	//Fluid->Output_Fluid_NF(0, 0, 20000);
-	//Solid->Output_Solid_NF(0, 0, 20000);
-
-
-	//Output_Fb();
-
-
-
-	mluti_method_step_g();
-
-	//Output_Fb();
-
-
-}
-
-void flow_past_a_circular_cylinder::clear_NF_Parameter()
-{
-
-
-	//Solid->Clear_NF_Fb();
-	//Solid->Clear_NF_ub();
-
-	//Fluid->Clear_NF_F_ij();
-	//Fluid->Clear_NF_u();
-}
-
-void flow_past_a_circular_cylinder::Output_mluti_test()
-{
-	Fluid->Output_Fluid_NF(0, 0, 20000);
-	Solid->Output_Solid_NF(0, 0, 20000);
-}
-
-void flow_past_a_circular_cylinder::Output_Fb()
-{
-
-
-
-
-	for (int i = 0; i < Solid->lagrange_node.size(); i++)
-	{
-		cout << endl;
-
-		cout << "x = " << Solid->lagrange_node[i]->Get_Position_x() << "\t";
-		cout << "y = " << Solid->lagrange_node[i]->Get_Position_y() << "\t";
-
-		cout << "getfx = " << Solid->lagrange_node[i]->Get_Fx() << "\t";
-		cout << "getfy = " << Solid->lagrange_node[i]->Get_Fy() << "\t";
-		cout << endl;
-
-	}
-
-
-}
-
-
-
-
-
-
-
-
 
 flow_past_a_circular_cylinder::~flow_past_a_circular_cylinder()
 {
