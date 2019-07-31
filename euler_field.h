@@ -16,8 +16,6 @@ public:
 	int _Max_Step;
 	vector<vector<Euler_Point*> > euler_node;
 
-	int _output_step;
-
 
 	double _u_inlet;
 	//À×ÅµÊý
@@ -26,8 +24,6 @@ public:
 	double _tau;
 	//ÌØÕ÷³ß¶È
 	double _L;
-	//mluti
-	int _NF;
 
 
 public:
@@ -36,26 +32,18 @@ public:
 	void Set_tau();
 	void Set_u_inlet(double u);
 	void Set_Max_step(int N);
-	void Set_NF(int nf);
 
 
 	double Get_Re();
 	double Get_L();
 	double Get_tau();
 	double Get_u_inlet();
-	int Get_Max_step();
-	int Get_NF();
-
-
+	int Get_Max_set();
 
 	//euler_field();
 
 	euler_field();
-	euler_field(int x, int y, double Re, double L, double u_inlet, int _max_step);
-
-	euler_field(int x, int y, double Re, double L, double u_inlet, int _max_step,int nf_number);
-
-
+	euler_field(int x,int y,double Re ,double L ,double u_inlet,int _max_step);
 	~euler_field();
 
 
@@ -83,23 +71,13 @@ public:
 	//Output 
 	void Output_grid();
 
-
-
 	void Output_field(double value, int step);
-
-	void Output_Fluid_NF(int NF_m, int NF_step, int cylinder_step);
-
-	void Output_all(double value, int step);
-
-
-	void Clear_NF_F_ij();
-	void Clear_NF_u();
-
-
 	
 	void Output_f(int x, int y);
 
 	void Output_Parameter();
+
+	void output_all(double value, int step);
 };
 
 

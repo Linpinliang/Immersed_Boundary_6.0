@@ -10,27 +10,6 @@ Euler_Point::Euler_Point(int x, int y)
 
 	Set_Position(x, y);
 
-	Set_Velocity( 0.1, 0);
-
-	Set_rho(1.0);
-
-	Set_Temperature(1.0);
-
-	Set_Body_force(0, 0);
-
-
-
-	//初始化是计算分布函数
-	Collision();
-	Set_u_v_noF(0, 0);
-}
-
-
-//mluti method
-Euler_Point::Euler_Point(int x, int y, int _nf_number)
-{
-	Set_Position(x, y);
-
 	Set_Velocity(0, 0);
 
 	Set_rho(1.0);
@@ -40,28 +19,15 @@ Euler_Point::Euler_Point(int x, int y, int _nf_number)
 	Set_Body_force(0, 0);
 
 
-	//mluti method
-	Set_NF(_nf_number);
-
-	initialize_NF_F(_NF);
-	initialize_NF_u(_NF);
 
 	//初始化是计算分布函数
 	Collision();
 	Set_u_v_noF(0, 0);
-
-
-
 }
 
 
 Euler_Point::~Euler_Point()
 {
-
-
-
-
-
 }
 
 void Euler_Point::macroscopic()
@@ -143,7 +109,7 @@ void Euler_Point::Set_Temperature(double t)
 
 void Euler_Point::Set_Pressure(double p)
 {
-	P = p;
+
 }
 
 void Euler_Point::Set_rho(double rho)
@@ -156,25 +122,6 @@ void Euler_Point::Set_u_v_noF(double u, double v)
 	u_noF = u;
 	v_noF = v;
 }
-
-void Euler_Point::Set_NF(int nf_number)
-{
-	_NF = nf_number;
-}
-
-void Euler_Point::Set_NF_F(int m, double Fx, double Fy)
-{
-	_NF_Fx[m] = Fx;
-	_NF_Fy[m] = Fy;
-}
-
-void Euler_Point::Set_NF_u(int m, double u, double v)
-{
-	_NF_u[m] = u;
-	_NF_v[m] = v;
-}
-
-
 
 void Euler_Point::Set_f(double value, int N)
 {
@@ -261,26 +208,6 @@ double Euler_Point::Get_rho()
 	return Rho;
 }
 
-double Euler_Point::Get_NF_Fx(int m)
-{
-	return _NF_Fx[m];
-}
-
-double Euler_Point::Get_NF_Fy(int m)
-{
-	return _NF_Fy[m];
-}
-
-double Euler_Point::Get_NF_u(int m)
-{
-	return _NF_u[m];
-}
-
-double Euler_Point::Get_NF_v(int m)
-{
-	return _NF_v[m];
-}
-
 double Euler_Point::Get_f(int N)
 {
 	return f[N];
@@ -294,18 +221,6 @@ double Euler_Point::Get_New_f(int N)
 double Euler_Point::Get_F(int N)
 {
 	return F[N];
-}
-
-void Euler_Point::initialize_NF_F(int nf_number)
-{
-	_NF_Fx = vector<double >(_NF);
-	_NF_Fy = vector<double >(_NF);
-}
-
-void Euler_Point::initialize_NF_u(int nf_number)
-{
-	_NF_u = vector<double >(_NF);
-	_NF_v = vector<double >(_NF);
 }
 
 

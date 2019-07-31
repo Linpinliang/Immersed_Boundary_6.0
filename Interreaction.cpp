@@ -9,7 +9,7 @@ Interreaction::Interreaction(int x_max, int y_max, int lagrange_node_number)
 
 	_lagrange_node_number = lagrange_node_number;
 
-	//int _nf = 5;
+	_nf = 5;
 
 
 	//_Euler_data = vector<vector<Temporary_Euler_node*> >(_euler_node_x_max + 1, vector<Temporary_Euler_node*>( _euler_node_y_max + 1));

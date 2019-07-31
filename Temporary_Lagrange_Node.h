@@ -8,7 +8,7 @@ class Temporary_Lagrange_Node
 {
 public:
 
-	int _nf = 5;
+	int _nf;
 
 	int _node_number;
 

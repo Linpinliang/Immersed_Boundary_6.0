@@ -26,10 +26,10 @@ void test04() {
 	r = 50;
 	number_of_node = 240;
 
-	Re = 100;
+	Re = 20;
 	L = 2 * r;
 	u = 0.1;
-	number_of_threads = 24;
+	number_of_threads = 32;
 	max_step = 500001;
 
 
@@ -57,8 +57,6 @@ void test04() {
 		cout << "end" << endl;
 
 
-
-		system("pause");
 
 
 

@@ -29,11 +29,6 @@ void euler_field::Set_Max_step(int N)
 	
 }
 
-void euler_field::Set_NF(int nf)
-{
-	_NF = nf;
-}
-
 double euler_field::Get_Re()
 {
 	return _Re;
@@ -54,14 +49,9 @@ double euler_field::Get_u_inlet()
 	return _u_inlet;
 }
 
-int euler_field::Get_Max_step()
+int euler_field::Get_Max_set()
 {
 	return _Max_Step;
-}
-
-int euler_field::Get_NF()
-{
-	return 0;
 }
 
 
@@ -96,37 +86,6 @@ euler_field::euler_field(int x, int y, double Re, double L, double u_inlet,int _
 		}
 	}
 }
-
-euler_field::euler_field(int x, int y, double Re, double L, double u_inlet, int _max_step, int nf_number)
-{
-	Nx = x;
-	Ny = y;
-
-	Set_Re(Re);
-	Set_L(L);
-	Set_u_inlet(u_inlet);
-	Set_tau();
-	Set_Max_step(_max_step);
-	Set_NF(nf_number);
-	cout << "eulerfiled nf =" << _NF<<endl;
-
-	euler_node = vector<vector<Euler_Point*> >(Nx + 1, vector<Euler_Point*>(Ny + 1));
-
-	for (int i = 0; i < Nx + 1; i++)
-	{
-		for (int j = 0; j < Ny + 1; j++)
-		{
-			Euler_Point* p1 = new Euler_Point(i, j,_NF);
-			euler_node[i][j] = p1;
-			//cout <<i<<"\t"<<j<<endl;
-		}
-	}
-
-}
-
-
-
-
 
 euler_field::~euler_field()
 {
@@ -468,9 +427,9 @@ void euler_field::Output_grid()
 
 	out << endl;
 
-	for (int i = 0; i <= Nx; i++)
+	for (int j = 0; j <= Ny; j++)
 	{
-		for (int j = 0; j <= Ny; j++)
+		for (int i = 0; i <= Nx; i++)
 		{
 
 			out << euler_node[i][j]->Get_Position_x();
@@ -484,10 +443,6 @@ void euler_field::Output_grid()
 	}
 
 }
-
-
-
-
 
 void euler_field::Output_field(double value, int step)
 {
@@ -503,10 +458,15 @@ void euler_field::Output_field(double value, int step)
 
 	out << endl;
 
-	for (int i = 0; i <= Nx; i++)
-	{
-		for (int j = 0; j <= Ny; j++)
+//	for (int i = 0; i <= Nx; i++)
+//	{
+//		for (int j = 0; j <= Ny; j++)
+//		{
+
+	for (int j = 0; j <= Ny; j++)
 		{
+			for (int i = 0; i <= Nx; i++)
+			{
 
 
 			out << euler_node[i][j]->Get_Velocity_x() << "\t";
@@ -520,167 +480,10 @@ void euler_field::Output_field(double value, int step)
 			//out << euler_node[i][j]->Get_Body_force_fx() << "\t";
 			//out << euler_node[i][j]->Get_Body_force_fy() << "\t";
 
-			for (int m = 0; m < _NF; m++)
-			{
-
-			}
-
-
 			out << endl;
 		}
 
 	}
-
-}
-
-void euler_field::Output_Fluid_NF(int NF_m, int NF_step, int cylinder_step)
-{
-	ostringstream name;
-
-
-	//name << "m = " << NF_m << "_lagrange_node" << cylinder_step <<"forcing_step="<< NF_step <<".dat";
-
-	name << "euler_node" << cylinder_step << "m = " << NF_m << "forcing_step=" << NF_step << ".csv";
-
-
-	ofstream out(name.str().c_str());
-
-
-
-	//out << euler_node[31][54]->Get_NF_u(1) << "\t";
-	//out << euler_node[31][54]->Get_NF_v(1) << "\t";
-	//out << euler_node[31][54]->Get_NF_Fx(1) << "\t";
-	//out << euler_node[31][54]->Get_NF_Fy(1) << "\t";
-	//out << endl;
-
-	for (int i = 0; i <= Nx; i++)
-	{
-		for (int j = 0; j <= Ny; j++)
-		{
-
-
-			out << euler_node[i][j]->Get_Position_x() << "\t";
-			out << euler_node[i][j]->Get_Position_y() << "\t";
-			out << endl;
-
-			for (int m = 0; m < _NF; m++)
-			{
-				out << "m = " << m << "\t";
-				out <<euler_node[i][j]->Get_NF_u(m) << "\t";
-				out << euler_node[i][j]->Get_NF_v(m) << "\t";
-				out << euler_node[i][j]->Get_NF_Fx(m) << "\t";
-				out << euler_node[i][j]->Get_NF_Fy(m) << "\t";
-				out << endl;
-			}
-
-
-
-			out << "result" << endl;
-
-
-			out << euler_node[i][j]->Get_NF_u(_NF-1) << "\t";
-			out << euler_node[i][j]->Get_NF_v(_NF -1) << "\t";
-
-			out << euler_node[i][j]->Get_Velocity_x() << "\t";
-			out << euler_node[i][j]->Get_Velocity_y() << "\t";
-
-			out << euler_node[i][j]->Get_Body_force_fx() << "\t";
-			out << euler_node[i][j]->Get_Body_force_fy() << "\t";
-			out << endl;
-
-		}
-
-
-		
-	}
-
-
-}
-
-void euler_field::Output_all(double value, int step)
-{
-	ostringstream name2;
-	name2 << "Re=" << value << "_euler_node_" << step << "all.plt";
-	ofstream out(name2.str().c_str());
-
-
-
-	out << "filetype = solution" << endl;
-	out << "variables =" << " \"u\" " << "," << " \"v \" " << "," << " \"P \" " << endl;
-	out << "zone i = " << Nx + 1 << "\t" << "j = " << Ny + 1 << "\t" << "f = point";
-
-	out << endl;
-
-	for (int i = 0; i <= Nx; i++)
-	{
-		for (int j = 0; j <= Ny; j++)
-		{
-			out << euler_node[i][j]->Get_Position_x() << "\t";
-			out << euler_node[i][j]->Get_Position_y() << "\t";
-
-			out << euler_node[i][j]->Get_Velocity_x() << "\t";
-			out << euler_node[i][j]->Get_Velocity_y() << "\t";
-
-			out << euler_node[i][j]->Get_Body_force_fx() << "\t";
-			out << euler_node[i][j]->Get_Body_force_fy() << "\t";
-
-
-			//out << euler_node[i][j]->Get_rho() << "\t";
-			//out << euler_node[i][j]->Get_Dentisy() << "\t";
-
-			//out << euler_node[i][j]->Get_u_noF() << "\t";
-			//out << euler_node[i][j]->Get_v_noF() << "\t";
-
-			//out << euler_node[i][j]->Get_Body_force_fx() << "\t";
-			//out << euler_node[i][j]->Get_Body_force_fy() << "\t";
-
-			for (int m = 0; m < _NF; m++)
-			{
-
-			}
-
-
-			out << endl;
-		}
-
-	}
-
-
-}
-
-void euler_field::Clear_NF_F_ij()
-{
-	for (int i = 0; i < euler_node.size(); i++)
-	{
-		for (int j = 0; j < euler_node[0].size(); j++)
-		{
-			for (int m = 0; i < _NF; i++)
-			{
-				euler_node[i][j]->Set_NF_F(m, 0, 0);
-			}
-		}
-	}
-
-
-}
-
-void euler_field::Clear_NF_u()
-{
-	for (int i = 0; i < euler_node.size(); i++)
-	{
-		for (int j = 0; j < euler_node[0].size(); j++)
-		{
-			for (int m = 0; m < _NF; m++)
-			{
-				euler_node[i][j]->Set_NF_u(m, 0, 0);
-				
-
-			}
-
-		}
-	}
-
-
 
 }
 
@@ -714,6 +517,52 @@ void euler_field::Output_Parameter()
 	cout << "tau=" << _tau << endl;
 	cout << "u_inlet=" << _u_inlet << endl;
 }
+
+void euler_field::output_all(double value, int step)
+{
+	ostringstream name2;
+	name2 << "Re=" << value << "_euler_node_all" << step << ".plt";
+	ofstream out(name2.str().c_str());
+
+
+
+	out << "filetype = solution" << endl;
+	out << "variables =" << " \"u\" " << "," << " \"v \" " << "," << " \"P \" " << endl;
+	out << "zone i = " << Nx + 1 << "\t" << "j = " << Ny + 1 << "\t" << "f = point";
+
+	out << endl;
+
+	//	for (int i = 0; i <= Nx; i++)
+	//	{
+	//		for (int j = 0; j <= Ny; j++)
+	//		{
+
+	for (int j = 0; j <= Ny; j++)
+	{
+		for (int i = 0; i <= Nx; i++)
+		{
+
+
+			out << euler_node[i][j]->Get_Velocity_x() << "\t";
+			out << euler_node[i][j]->Get_Velocity_y() << "\t";
+			out << euler_node[i][j]->Get_rho() << "\t";
+			
+
+			//out << euler_node[i][j]->Get_u_noF() << "\t";
+			//out << euler_node[i][j]->Get_v_noF() << "\t";
+
+			out << euler_node[i][j]->Get_Body_force_fx() << "\t";
+			out << euler_node[i][j]->Get_Body_force_fy() << "\t";
+
+			out << endl;
+		}
+
+	}
+
+
+
+}
+
 
 
 

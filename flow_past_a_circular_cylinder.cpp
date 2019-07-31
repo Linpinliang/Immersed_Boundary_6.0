@@ -476,7 +476,7 @@ void flow_past_a_circular_cylinder::multi_evolution()
 	Fluid->Output_grid();
 	Output_Parameter();
 	//Set_up_interreaction_data();
-	
+	//_interreaction->Output_euler_data();
 	for (int i = 0; i < _max_step; i++)
 	{
 		multi_direct_forcing_step();
@@ -486,7 +486,7 @@ void flow_past_a_circular_cylinder::multi_evolution()
 		Stream_step();
 		Macroscopic();
 
-		if (i % 500 == 0) {
+		if (i % 5000 == 0) {
 			cout << i << endl;
 			Output_Fluid(_Re, i+1);
 			Output_Solid(_Re, i+1);
@@ -559,6 +559,8 @@ void flow_past_a_circular_cylinder::multi_direct_forcing_step()
 
 	//_interreaction->Output_euler_data();
 	//_interreaction->Output_laghrange_data();
+
+
 	delete _interreaction;
 	
 

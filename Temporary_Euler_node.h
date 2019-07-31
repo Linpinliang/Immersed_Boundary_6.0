@@ -8,7 +8,7 @@ class Temporary_Euler_node
 {
 public:
 	bool _calculate;
-	int _nf = 20;
+	int _nf;
 
 	int _number_x;
 	int _number_y;

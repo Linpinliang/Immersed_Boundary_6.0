@@ -3,8 +3,6 @@
 #include "Parameter.h"
 #include <iostream>
 #include "Function.h"
-#include <vector>
-using namespace std;
 /*
 
 
@@ -49,17 +47,6 @@ private:
 	double forcing_x;
 	double forcing_y;
 
-
-	//multi method parameter
-	int _NF;
-
-	vector<double > _NF_Fx;
-	vector<double > _NF_Fy;
-
-	vector<double > _NF_u;
-	vector<double > _NF_v;
-
-
 	//分布函数
 	double New_f[9];
 	double f[9];
@@ -74,10 +61,6 @@ public:
 
 	//初始化
 	Euler_Point(int x, int y);
-
-	Euler_Point(int x, int y , int _nf_number);
-
-
 
 	~Euler_Point();
 
@@ -117,12 +100,6 @@ public:
 	void Set_rho(double rho);
 	void Set_u_v_noF(double u, double v);
 
-	//mluti method begin
-
-	void Set_NF(int nf_number);
-	void Set_NF_F(int m, double Fx ,double Fy);
-	void Set_NF_u(int m,double u ,double v);
-	//mluti method end
 
 
 
@@ -158,29 +135,11 @@ public:
 	double Get_Temperature();
 	double Get_rho();
 
-	//mluti method begin
-
-	double Get_NF_Fx(int m);
-	double Get_NF_Fy(int m);
-
-	double Get_NF_u(int m);
-	double Get_NF_v(int m);
-
-	//mluti method end
-
-
-
 	double Get_f(int N);
 
-	double Get_New_f(int N);
+	double  Get_New_f(int N);
 	double Get_F(int N);
 
-
-
-	void initialize_NF_F(int nf_number);
-	void initialize_NF_u(int nf_number);
-
-	//Get
 
 
 	//Print函数

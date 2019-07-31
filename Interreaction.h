@@ -6,7 +6,7 @@
 class Interreaction
 {
 public:
-	int _nf = 3;
+	int _nf;
 
 	int _euler_node_x_max;
 	int _euler_node_y_max;

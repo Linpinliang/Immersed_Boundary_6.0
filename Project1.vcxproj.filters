@@ -1,0 +1,85 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="头文件">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="源文件">
+      <UniqueIdentifier>{e62d8bfc-1036-48f4-947b-ef8338f34f5b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Temporary">
+      <UniqueIdentifier>{315acde3-efb2-4dfe-b5f8-4f5ca1657cd3}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="euler_field.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Euler_Point.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="flow_past_a_circular_cylinder.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Function.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Lagrange_field.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Lagrange_Point.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Temporary_Euler_node.cpp">
+      <Filter>Temporary</Filter>
+    </ClCompile>
+    <ClCompile Include="Temporary_Lagrange_Node.cpp">
+      <Filter>Temporary</Filter>
+    </ClCompile>
+    <ClCompile Include="Interreaction.cpp">
+      <Filter>Temporary</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Function.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Lagrange_field.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Lagrange_Point.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Parameter.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Poiseuille.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="euler_field.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Euler_Point.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="flow_past_a_circular_cylinder.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Temporary_Euler_node.h">
+      <Filter>Temporary</Filter>
+    </ClInclude>
+    <ClInclude Include="Temporary_Lagrange_Node.h">
+      <Filter>Temporary</Filter>
+    </ClInclude>
+    <ClInclude Include="Interreaction.h">
+      <Filter>Temporary</Filter>
+    </ClInclude>
+    <ClInclude Include="test.h">
+      <Filter>源文件</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
